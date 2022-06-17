@@ -69,8 +69,15 @@ function chaincode_command_group() {
 # Convenience routine to "do everything" required to bring up a sample CC.
 function deploy_chaincode() {
   local cc_name=$1
+<<<<<<< HEAD
   local cc_label=$1
   local cc_folder=$(absolute_path $2)
+=======
+  local cc_label=$2
+  local cc_folder=$(absolute_path $3)
+  local sequence=$4
+
+>>>>>>> Add custom chaincode and application implementation to the main branch of fabric k8s network
   local temp_folder=$(mktemp -d)
   local cc_package=${temp_folder}/${cc_name}.tgz
 
@@ -82,17 +89,28 @@ function deploy_chaincode() {
     launch_chaincode      ${cc_name} ${CHAINCODE_ID} ${CHAINCODE_IMAGE}
   fi
 
+<<<<<<< HEAD
   activate_chaincode      ${cc_name} ${cc_package}
 }
 
 # Prepare a chaincode image for use in a builder package.
 # Sets the CHAINCODE_IMAGE environment variable
 function prepare_chaincode_image() {
+=======
+  launch_chaincode        ${cc_name} ${CHAINCODE_ID} ${CHAINCODE_IMAGE}
+  activate_chaincode      ${cc_name} ${cc_package} ${sequence}
+}
+
+# Infer a reasonable name for the chaincode image based on the folder path conventions, or
+# allow the user to override with CHAINCODE_IMAGE.
+function set_chaincode_image() {
+>>>>>>> Add custom chaincode and application implementation to the main branch of fabric k8s network
   local cc_folder=$1
   local cc_name=$2
 
   build_chaincode_image ${cc_folder} ${cc_name}
 
+<<<<<<< HEAD
   if [ "${CLUSTER_RUNTIME}" == "k3s" ]; then
     # For rancher / k3s runtimes, bypass the local container registry and load images directly from the image cache.
     export CHAINCODE_IMAGE=${cc_name}
@@ -100,6 +118,13 @@ function prepare_chaincode_image() {
     # For KIND and k8s-builder environments, publish the image to a local docker registry
     export CHAINCODE_IMAGE=localhost:${LOCAL_REGISTRY_PORT}/${cc_name}
     publish_chaincode_image ${cc_name} ${CHAINCODE_IMAGE}
+=======
+  if [ -z "$CHAINCODE_IMAGE" ]; then
+    # cc_folder path starting with first index of "fabric-samples"
+    CHAINCODE_IMAGE=${cc_folder/*fabric-samples/fabric-samples}
+  else
+    CHAINCODE_IMAGE=${CHAINCODE_IMAGE}
+>>>>>>> Add custom chaincode and application implementation to the main branch of fabric k8s network
   fi
 }
 
@@ -134,12 +159,13 @@ function publish_chaincode_image() {
 function activate_chaincode() {
   local cc_name=$1
   local cc_package=$2
+  local sequence=$3
 
   set_chaincode_id    ${cc_package}
 
   install_chaincode   ${cc_package}
-  approve_chaincode   ${cc_name} ${CHAINCODE_ID}
-  commit_chaincode    ${cc_name}
+  approve_chaincode   ${cc_name} ${CHAINCODE_ID} ${sequence}
+  commit_chaincode    ${cc_name} ${sequence}
 }
 
 function query_chaincode() {
@@ -344,6 +370,7 @@ function approve_chaincode() {
   local peer=peer1
   local cc_name=$1
   local cc_id=$2
+  local sequence=$3
   push_fn "Approving chaincode ${cc_name} with ID ${cc_id}"
 
   export_peer_context $org $peer
@@ -352,10 +379,15 @@ function approve_chaincode() {
     chaincode approveformyorg \
     --channelID     ${CHANNEL_NAME} \
     --name          ${cc_name} \
-    --version       1 \
+    --version       ${sequence} \
     --package-id    ${cc_id} \
+<<<<<<< HEAD
     --sequence      1 \
     --orderer       org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+=======
+    --sequence      ${sequence} \
+    --orderer       org0-orderer1.${DOMAIN}:443 \
+>>>>>>> Add custom chaincode and application implementation to the main branch of fabric k8s network
     --connTimeout   ${ORDERER_TIMEOUT} \
     --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
 
@@ -367,6 +399,7 @@ function commit_chaincode() {
   local org=org1
   local peer=peer1
   local cc_name=$1
+  local sequence=$2
   push_fn "Committing chaincode ${cc_name}"
 
   export_peer_context $org $peer
@@ -375,9 +408,15 @@ function commit_chaincode() {
     chaincode commit \
     --channelID     ${CHANNEL_NAME} \
     --name          ${cc_name} \
+<<<<<<< HEAD
     --version       1 \
     --sequence      1 \
     --orderer       org0-orderer1.${DOMAIN}:${NGINX_HTTPS_PORT} \
+=======
+    --version       ${sequence} \
+    --sequence      ${sequence} \
+    --orderer       org0-orderer1.${DOMAIN}:443 \
+>>>>>>> Add custom chaincode and application implementation to the main branch of fabric k8s network
     --connTimeout   ${ORDERER_TIMEOUT} \
     --tls --cafile  ${TEMP_DIR}/channel-msp/ordererOrganizations/org0/orderers/org0-orderer1/tls/signcerts/tls-cert.pem
 
